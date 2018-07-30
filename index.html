@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="author" content="Kolsha">
     <link rel="icon" type="image/png" href="img/favicon.png" />
-    
 
     <title>Index</title>
 
@@ -18,7 +17,6 @@
     <script src="js/bootstrap.min.js"></script>
 
 
-    <script type="text/javascript" src="js/jquery.tablesorter.min.js"></script>
 
     <style type="text/css">
         * {
@@ -28,8 +26,6 @@
         tr,
         td {
             line-height: 5px !important;
-            word-wrap: normal;
-            text-overflow: ellipsis;
         }
 
         th.header {
@@ -59,140 +55,919 @@
 <body>
     <div class="container-fluid">
 
+        <div class="row text-center">
+            <div class="form-inline">
+                <div class="form-group">
+                    <label for="exampleInputName2">ID</label>
+                    <input type="number" class="form-control" id="event_id" placeholder="">
+                </div>
 
-            <div class="row text-center">
-                <a class="btn btn-primary" id="main_refresh">Refresh</a>
+                <button id="start_stop_btn" class="btn btn-success">Старт</button>
             </div>
-
-            <table class="table table-striped table-bordered left" id="main_rows">
-                <caption></caption>
-                <thead>
-                    <tr>
-                        <th>Booked ID</th>
-                        <th>Start Time</th>
-
-                        <th>Sport</th>
-
-                        <th>League</th>
-
-                        <th>Team 1-st</th>
-                        <th>Team 2-nd</th>
-                        <th>GateWay code</th>
-                    </tr>
-                </thead>
-                <tbody>
-
-
-                </tbody>
-            </table>
-
-
-
-
-
-
-
-
-
-
-        <div class="col-xs-12" style="text-align: center;">
-            Kolsha.ru 2018
         </div>
+
+
+        <table class="table table-striped table-bordered left" id="event_rows">
+            <caption></caption>
+            <thead>
+                <tr>
+                    <th>Время</th>
+                    <th>Время матча</th>
+
+                    <th>Описание</th>
+                </tr>
+            </thead>
+            <tbody>
+
+
+            </tbody>
+        </table>
+
+    </div>
+
+
+    <div class="col-xs-12" style="text-align: center;">
+        Kolsha.ru 2018
     </div>
 
 
     <script>
-    
         var API_ROOT = 'https://broadcast-tt.ccf4ab51771cacd46d.com/';
- 
-        var sport_codes = {
-            11726525: "Футбол",
-            11726631: "Хоккей",
-            11726632: "Баскетбол",
-            11726633: "Волейбол",
-            11726634: "Гандбол",
-            11726635: "Теннис",
-            11726636: "Бейсбол",
-            11762637: "Бадминтон",
-            11762638: "Настольный теннис",
-            11762639: "Пляжный волейбол",
-            11800101: "Киберспорт Counter-Strike",
-            11800102: "Киберспорт World Of Tanks",
-            11800201: "Футзал",
-            11800301: "Снукер",
-            11800401: "Дартс",
-            11800501: "Боулз",
-            11800601: "Сквош",
-            11800701: "Регби",
-            11800801: "Киберспорт Dota 2",
-            11800901: "Сепактакрау"
-        };
 
+        // Explicitly save/update a url parameter using HTML5's replaceState().
+        function updateQueryStringParam(key, value) {
+            baseUrl = [location.protocol, '//', location.host, location.pathname].join('');
+            urlQueryString = document.location.search;
+            var newParam = key + '=' + value,
+                params = '?' + newParam;
+
+            // If the "search" string exists, then build params from it
+            if (urlQueryString) {
+                keyRegex = new RegExp('([\?&])' + key + '[^&]*');
+                // If param exists already, update it
+                if (urlQueryString.match(keyRegex) !== null) {
+                    params = urlQueryString.replace(keyRegex, "$1" + newParam);
+                } else { // Otherwise, add it to end of query string
+                    params = urlQueryString + '&' + newParam;
+                }
+            }
+            window.history.replaceState({}, "", baseUrl + params);
+        }
+
+        function getQueryStringParam(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, '\\$&');
+            var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+
+
+        function pad(num, size) {
+            var s = num + "";
+            while (s.length < size) s = "0" + s;
+            return s;
+        }
+
+        var event_code = getQueryStringParam('id');
+        var last_event_id = 0;
+
+        var eventTimerId = null;
+
+       function parse_event_time(event) 
+		{
+
+            var res = '';
+
+            switch (event.type) {
+
+
+                case 2003:
+                case 2011:
+				case 1052:
+				case 1032:
+                    res = '00:00';
+                    break;
+
+                case 1100:
+                case 1101:
+                case 1106:
+                case 1107:
+                case 1108:
+                case 1109:
+                case 1110:
+                case 1111:
+				case 1113:
+				case 1114:
+				case 1115:
+				case 1116:
+				case 1117:
+				case 1149:
+				case 1150:
+				case 1159:
+				case 1163:
+				case 1168:
+				case 1169:
+				case 1171:
+				case 1188:
+				case 1190:
+				case 1191:
+				case 1192:
+				case 1193:
+				case 1194:
+				case 1195:
+				case 1196:
+				case 1197:
+				case 1199:
+                    res = pad(Math.trunc(event.i3 / 60), 2) + ":" + pad(event.i3 % 60, 2) + ' (' + event.i2 + ' тайм)';
+                    break;
+					
+                case 1164:
+                    res = pad(Math.trunc(event.i4 / 60), 2) + ":" + pad(event.i4 % 60, 2)  + ' (' + event.i3 + ' тайм)';
+                    break;
+
+				case 1112:
+				case 1105:
+                    res = pad(Math.trunc(event.i1 / 60), 2) + ":" + pad(event.i1 % 60, 2);
+                    break;
+
+				case 1162:
+				case 1152:
+				case 1154:
+				case 1156:
+                    res = pad(Math.trunc(event.i2 / 60), 2) + ":" + pad(event.i2 % 60, 2);
+                    break;
+
+					
+                case 1170:
+                case 1172:
+                case 1173:
+                case 1189:
+                    res = pad(Math.trunc(event.i2 / 60), 2) + ":" + pad(event.i2 % 60, 2)  + ' (' + event.i1 + ' тайм)';
+                    break;
+
+				case 1570:
+				case 1571:
+				case 1574:
+                    res = pad(Math.trunc(event.i1 / 60), 2) + ":" + pad(event.i1 % 60, 2)  + ' (' + event.i2 + ' тайм)';
+                    break;
+					
+                
+					
+                case 1148:
+                case 1146:
+                case 1147:
+                case 1141:
+                case 1127:
+                case 1008:
+                    res = pad(event.i1, 2) + ":00";
+                    break;
+
+				case 1013:
+				case 1014:
+				case 1015:
+				case 1016:
+				case 1142:
+                    res = pad(event.i2, 2) + ":00";
+                    break;
+				
+				case 1126:
+				case 1034:
+                    res = pad(event.i3, 2) + ":00";
+                    break;
+				
+				case 1023:
+                    res = pad(event.i4, 2) + ":00";
+                    break;
+				
+				case 1026:
+                    res = pad(event.i9, 2) + ":00";
+                    break;
+				
+				case 1500:
+				case 1503:
+				case 1504:
+                    res = pad(Math.trunc(event.i1 / 60), 2) + ":" + pad(event.i1 % 60, 2) + ' (' + event.i2 + ' четв.)';
+                    break;
+				
+				case 1532:
+                case 1533:
+                case 1534:
+                case 1518:
+                case 1522:
+                case 1530:
+                case 1532:
+                    res = pad(Math.trunc(event.i2 / 60), 2) + ":" + pad(event.i2 % 60, 2) + ' (' + event.i3 + ' четв.)';
+                    break;
+					
+                case 1536:
+                case 1565:
+                case 1524:
+                case 1551:
+				    res = pad(Math.trunc(event.i3 / 60), 2) + ":" + pad(event.i3 % 60, 2) + ' (' + event.i4 + ' четв.)';
+                    break;
+                case 1550:
+				    res = pad(Math.trunc(event.i6 / 60), 2) + ":" + pad(event.i6 % 60, 2) + ' (' + event.i7 + ' четв.)';
+                    break;
+                default:
+                    res = '';
+            }
+
+            return res;
+        }
+
+        function parse_event_desc(event) {
+
+            var res = '';
+
+            switch (event.type) {
+    
+				// футбол
+				case 2003:
+                    res = 'Вид сопровождения: ';
+                    if (event.i1 == 1)
+                        res += 'стадион';
+
+                    if (event.i1 == 2)
+                        res += 'ТВ';
+
+                    if (event.i1 == 3)
+                        res += 'радио';
+
+                    break;
+				case 2011:
+                    res = 'Продолжительность игры: ' + event.i1 + ' минут';
+                    break;
+				case 1129:
+				case 1131:
+                    res = 'Связь со скаутом установлена ';
+                    break;
+				case 1130:
+                    res = 'Связь со скаутом потеряна ';
+                    break;
+				case 1132:
+                    res = 'Событие задержано на ' + event.i1 + 'минут';
+                    break;
+				case 1133:
+                    res = 'Трансляция события отменена';
+                    break;
+				case 1134:
+                    res = 'Трансляция события прекращена';
+                    break;
+				case 1135:
+                    res = 'Событие перенесено/отменено';
+                    break;
+				case 1136:
+                    res = 'Начало спортивного события задержано из-за предшествующего матча на стадионе';
+                    break;
+				
+				
+				case 1052:
+                    res = 'Определен цвет формы игроков команды ' + event.i1 + ' RGB: ' + event.i2 + ' ' + event.i3;
+                    break;
+				case 1206:
+                    res = 'Игроки всех команд вышли на поле';
+                    break;
+				case 1032:
+                    res = 'Подбрасывание монеты';
+                    break;
+				case 1033:
+                    res = 'Игра скоро начнется';
+                    break;
+				case 1034:
+                    res = 'Мяч в игру вводит команда ' + event.i1;
+                    break;
+	            case 1107:
+                    res = 'Опасная атака: команда ' + event.i1 ;
+                    break;
+                case 1108:
+                    res = 'Желтая карточка: команда ' + event.i1 ;
+                    break;
+                case 1164:
+					res = ((event.i2 < 3) ? 'Обычный' : 'Опасный') + ' аут: бросает команда ' + event.i1;
+                    break;
+                case 1201:
+                    res = event.i2 + '-ая желтая карточка у команды ' + event.i1;
+                    break;
+				case 1118:
+                    res = 'Начало ' + event.i1 + '-го тайма';
+                    break;
+				case 1117:
+                    res = 'Опасный штрафной удар команды ' + event.i1;
+                    break;
+                case 1116:
+                    res = 'Щтрафной удар команды ' + event.i1;
+                    break;
+                case 1115:
+                    res = 'Удар мимо ворот команды ' + event.i1;
+                    break;
+                case 1114:
+                    res = 'Удар по воротам команды ' + event.i1;
+                    break;
+                case 1113:
+                    res = 'Владение мячом команды ' + event.i1;
+                    break;
+                case 1111:
+                    res = 'Замена команды ' + event.i1;
+                    break;
+                case 1110:
+                    res = 'Пенальти команды ' + event.i1;
+                    break;
+                case 1109:
+                    res = 'Красная карточка команды ' + event.i1;
+                    break;
+                case 1104:
+                    res = 'Компенсированое время: ' + event.i1 + ' минут (' + event.i2 + ' тайм)';
+                    break;
+                case 1101:
+                    res = 'Угловой команды ' + event.i1;
+                    break;
+                case 1100:
+                    res = 'ГОЛ команды ' + event.i1;
+                    break;
+				case 1102:
+                    res = 'Конец ' + event.i1 + '-го тайма ';
+                    break;
+				case 1103:
+                    res = 'Матч завершен ';
+                    break;
+                case 1105:
+                    res = 'Матч начался ';
+                    break;
+                case 1106:
+                    res = 'Владение мячом команды ' + event.i1;
+                    break;
+                case 1149:
+                    res = 'Возможная карточка у команды ' + event.i1==0?'':event.i1;
+                    break;
+                case 1150:
+                    res = 'Карточка не назначена у команды ' + event.i1==0?'':event.i1;
+                    break;
+                case 1152:
+                    res = 'Пенальти забила команда ' + event.i1==0?'':event.i1;
+                    break;
+                case 1154:
+                    res = 'Пенальти не забила команда ' + event.i1==0?'':event.i1;
+                    break;
+                case 1156:
+                    res = 'Пенальти отменен у команды ' + event.i1==0?'':event.i1;
+                    break;
+                case 1159:
+                    res = 'Штрафной удар не назначен для команды ' + event.i1;
+                    break;
+                case 1168:
+                    res = 'Удар от ворот команды' + event.i1;
+                    break;
+                case 1169:
+                    res = 'Штрафной удар у команды' + event.i1;
+                    break;
+                case 1172:
+                    res = 'Статус не определен';
+                    break;
+
+				case 1163:
+                    res = 'Начальный удар у команды ' + event.i1;
+                    break;
+				case 1188:
+                    res = 'Возможный гол у команды ' + event.i1;
+                    break;
+                case 1189:
+                    res = 'Гол не подтвержден ';
+                    break;
+                case 1191:
+                    res = 'Угловой не подтвержден ';
+                    break;
+                case 1190:
+                    res = 'Возможный угловой у команды ' + event.i1
+                    break;
+                case 1197:
+                    res = 'Фол команды ' + event.i1;
+                    break;
+                case 1192:
+                    res = 'Возмодное пенальти пробъет команада ' + event.i1 ;
+                    break;
+                case 1193:
+                    res = 'Пенальти не подтвержден ';
+                    break;
+                case 1194:
+                    res = 'Команада ' + event.i1 + ' блокировала удар';
+                    break;
+                case 1195:
+                    res = 'Вратарь команды ' + event.i1 + ' отбил удар';
+                    break;
+                case 1196:
+                    res = 'Офсайл команды ' + event.i1;
+                    break;
+                case 1199:
+                    res = 'Возможный штрафной удар команды ' + event.i1;
+                    break;
+                case 1200:
+                    res = 'Забито голов у команды ' + event.i1 + ': ' +  event.i2;
+                    break;
+                case 1201:
+                    res = 'Желтых карточек у команды ' + event.i1 + ': ' +  event.i2;
+                    break;
+                case 1202:
+                    res = 'Красных карточек у команды ' + event.i1 + ': ' +  event.i2;
+                    break;
+                case 1203:
+                    res = 'Угловых у команды ' + event.i1 + ': ' +  event.i2;
+                    break;
+                case 1204:
+                    res = 'Вбросов из аута у команды ' + event.i1 + ': ' +  event.i2;
+                    break;
+                case 1205:
+                    res = 'Штрафные удары у команды ' + event.i1 + ': ' +  event.i2;
+                    break;
+                case 1207:
+                    res = 'Ударов по воротам у команды ' + event.i1 + ': ' +  event.i2;
+                    break;
+                case 1208:
+                    res = 'Промахов у команды ' + event.i1 + ': ' +  event.i2;
+                    break;
+                case 1209:
+                    res = 'Количество опасных моментов у команды ' + event.i1 + ': ' +  event.i2;
+                    break;
+                case 1210:
+                    res = 'Количество атак у команды ' + event.i1 + ': ' +  event.i2;
+                    break;
+                case 1215:
+                    res = 'Владение мячом: ' + event.i1 + '%:' +  event.i2 + '%';
+                    break;
+                case 1216:
+                    res = 'Статистика по территории владения Зона А: ' + event.i1 + '%, Зона В: ' +  event.i2 + '%, Зона С: ' +  event.i3 + '%';
+                    break;
+                case 1217:
+                    res = 'Количество замен у команды ' + event.i1 + ': ' +  event.i2;
+                    break;
+                case 1222:
+                    res = 'Количество пенальти у команды ' + event.i1 + ': ' +  event.i2;
+                    break;
+                case 1171:
+                    res = 'Подающая команда ' + event.i1;
+                    break;
+                case 1112:
+                    res = 'Таймер включён ';
+                    break;
+                case 1162:
+                    res = 'Построение удара команды ' + event.i1;
+                    break;
+                case 1170:
+                    res = 'Драка среди игроков';
+                    break;
+                case 1574:
+                    res = 'Травмирован игрок';
+                    break;
+                case 1554:
+                    res = 'Заполненность стадиона: ' + event.i1 + '%';
+                    break;
+                case 1154:
+                    res = 'Пенальти не забит командой ' + event.i1 ;
+                    break;
+				case 1173:
+                    res = 'Статус ОК' ;
+                    break;
+
+					
+				
+					// теннис
+				case 1123:
+                    res = 'Подает игрок ' + event.i3 + ', Сет ' + event.i1 + ', гейм ' + event.i2 
+                    break;
+                case 1124:
+                    res = 'Игрок подает';
+                    break;
+                case 1125:
+                    res = 'Сет ' + event.i1 + ', гейм ' + event.i2 + ', очко взял игрок ' + event.i3 + '. ' +
+                        event.i4 + ':' + event.i5 + ' ' + event.i6 + ':' + event.i7 + ' (' +
+                        (event.i8==50?'A':event.i8) + ':' + (event.i9==50?'A':event.i9) + ') ';
+                    if (event.i10 == 1)
+                        res += 'Эйс';
+
+                    if (event.i10 == 2)
+                        res += 'Дабл фол';
+
+                    if (event.i10 == 3)
+                        res += 'Нарушение';
+                    break;
+				case 1026:
+                    res = 'Сет ' + event.i1 + ', гейм ' + event.i2 + ', очко взял игрок ' + event.i3 + '. ' +
+                        event.i4 + ':' + event.i5 + ' ' + event.i6 + ':' + event.i7 + ' (' +
+                        event.i8 + ':' + event.i9 + ') ';
+                    break;
+
+
+                case 1126:
+                    res = 'Сет ' + event.i1 + ', гейм ' + event.i2 + ', игрок ' + event.i4 + ': ошибка на подаче ';
+                    if (event.i5 == 1)
+                        res += 'заступ';
+                    break;
+				
+				case 1127:
+                    res = 'Изменение сета Сет ' + event.i2;
+                    break;
+				case 1128:
+                    res = 'Таймаут';
+                    break;
+				case 1013:
+                    res = 'Туалетный брейк взял игрок ' + event.i1;
+                    break;
+				case 1014:
+                    res = 'Туалетный брейк окончен у игрока ' + event.i1;
+                    break;
+				case 1015:
+                    res = 'Вызов тренера взял игрок ' + event.i1;
+                    break;
+				case 1016:
+                    res = 'Вызов тренера окончен у игрока ' + event.i1;
+                    break;
+				case 1017:
+                    res = 'Игра приостановлена: ' ;
+					if (event.i2 == 0)
+                        res += 'причина неизвестна';
+
+                    if (event.i2 == 1)
+                        res += 'погодные условия';
+
+                    if (event.i2 == 2)
+                        res += 'негодование зрителей';
+                    if (event.i2 == 3)
+                        res += 'травма игрока';
+                    if (event.i2 == 4)
+                        res += 'проблемы с освещением';
+                    if (event.i2 == 5)
+                        res += 'обслуживание поля';
+                    if (event.i2 == 6)
+                        res += 'драка игроков';
+                    if (event.i2 == 7)
+                        res += 'травма судьи';
+                    if (event.i2 == 8)
+                        res += 'судья пересматривает игру';
+                    if (event.i2 == 9)
+                        res += 'серьезная травма';
+                    if (event.i2 == 10)
+                        res += 'видеорефери';
+                    if (event.i2 == 11)
+                        res += 'тайм-аут';
+                    break;
+				case 1024:
+                    res = 'Начало корректировки счёта ';
+                    break;
+				case 1025:
+                    res = 'Завершение корректировки счёта ';
+                    break;
+				
+				
+				case 1142:
+                    res = 'Нарушение правил игроком ' + event.i1;
+                    break;
+				
+					
+					
+					
+
+				case 1001:
+                    res = 'Начало трансляции';
+                    break;
+				case 1002:
+                    res = 'Конец трансляции';
+                    break;
+				case 1003:
+                    res = 'Таймер остановлен';
+                    break;
+				case 1004:
+                    res = 'Приём ставок открыт';
+                    break;
+				case 1005:
+                    res = 'Приём ставок закрыт';
+                    break;
+				case 1006:
+                    res = 'Сопровождение матча:';
+					if (event.i1 == 0)
+                        res += ' covered';
+                    if (event.i1 == 1)
+                        res += ' coverage abandoned';
+                    if (event.i1 == 2)
+                        res += ' match will not be covered';
+                    if (event.i1 == 3)
+                        res += ' suspended';
+                    break;
+				case 1008:
+                    res = 'Матч прерван';
+                    break;
+				case 1009:
+                    res = 'Перерыв в матче';
+                    break;
+				case 1010:
+                    res = 'Перерыв в матче окончен';
+                    break;
+				case 1011:
+                    res = 'Перерыв из-за плохих погодных условий';
+                    break;
+				case 1012:
+                    res = 'Перерыв из-за плохих погодных условий окончен';
+                    break;
+				
+				case 1031:
+                    res = 'Игроки разминаются';
+                    break;
+				case 1032:
+                    res = 'Подбрасывание монеты';
+                    break;
+				case 1033:
+                    res = 'Игра скоро начнется';
+                    break;
+				case 1139:
+                    res = 'Подбрасывание монеты выигал мгрок ' + event.i1;
+                    break;
+				case 1140:
+                    res = 'слева от судьи играет мгрок ' + event.i1;
+                    break;
+					
+				case 1148:
+                    res = 'Проверка следа от мяча';
+                    break;
+
+                case 1141:
+                    res = 'Очко будет переиграно';
+                    break;
+                case 1146:
+                    res = 'Сетка. Повтор подачи';
+                    break;
+                case 1147:
+                    res = 'Челлендж: игрок ' + event.i2;
+                    break;
+                case 2001:
+                    res = 'Пол игроков: ' ;
+					if (event.i1 == 1)
+                        res += 'Мужчины';
+
+                    if (event.i1 == 2)
+                        res += 'Женщины';
+
+                    if (event.i1 == 3)
+                        res += 'Смешаный';
+                    break;
+				case 2061:
+                    res = ' Тип участников матча: ' ;
+					if (event.i1 == 1)
+                        res += 'Одиночные';
+
+                    if (event.i1 == 2)
+                        res += 'Пары';
+                    break;
+				case 2062:
+                    res = 'Тип гейма: ' ;
+					if (event.i1 == 1)
+                        res += 'с advantage';
+
+                    if (event.i1 == 0)
+                        res += 'без advantage';
+                    break;
+				case 2063:
+                    res = 'Тип тай-брейка: ' ;
+					if (event.i1 == 0)
+                        res += 'без тай-брейка';
+
+                    if (event.i1 == 7)
+                        res += 'до 7 очков';
+
+					if (event.i1 == 10)
+                        res += 'до 10 очков';
+					break;
+				case 2064:
+                    res = 'Тай-брейк в последнем сете: ' ;
+					if (event.i1 == 0)
+                        res += 'нет';
+
+                    if (event.i1 == 1)
+                        res += 'да';
+					break;
+
+				case 2065:
+                    res = 'Количество сетов: ' + event.i1;
+					break;
+
+				case 2066:
+                    res = 'Тип покрытия: ' ;
+					if (event.i1 == 1)
+                        res += 'грунт';
+                    if (event.i1 == 2)
+                        res += 'хард';
+                    if (event.i1 == 3)
+                        res += 'трава';
+                    if (event.i1 == 4)
+                        res += 'ковёр';
+					break;
+
+
+                    // баскетбол
+                case 1048:
+                    res = 'Таймаут окончен' ;
+                    break;
+				case 1594:
+                    res = 'Церемониальная речь';
+                    break;
+				
+				case 1500:
+                    res = 'Таймер скорректирован' ;
+                    break;
+				case 1503:
+                    res = 'Таймер включен';
+                    break;
+				case 1504:
+                    res = 'Таймер остановлен';
+                    break;
+				case 1518:
+                    res = 'Фол команды ' + event.i1;
+                    break;
+				case 1522:
+                    res = 'Штрафной бросок команды ' + event.i1;
+                    break;
+				case 1524:
+                    res = 'Назначение штрафных бросков команде ' + event.i1 + ': ' + event.i2 + 'шт.';
+                    break;
+				case 1530:
+                    res = 'Штрафной бросок не реализован командой ' + event.i1 ;
+                    break;
+				case 1532:
+                    res = 'Владение мячом команды ' + event.i1;
+                    break;
+                case 1533:
+                    res = 'Подбор команды ' + event.i1;
+                    break;
+				case 1550:
+                    res = 'Фолы команды ' + event.i1 + ' по четвертям: ' + event.i2+ ', '+ event.i3+ ', '+ event.i4+ ', '+ event.i5+ '. Итого: ' + event.i8 ;
+                    break;
+				case 1551:
+                    res = 'Фолы команды ' + event.i1 + '. Итого: ' + event.i2 ;
+                    break;
+				case 1565:
+                    res = 'Количество очков команды ' + event.i1 + ': ' + event.i2;
+                    break;
+				case 1534:
+                    res = 'Промах команды ' + event.i1 + ' (' + event.i4 + ' очков)';
+                    break;
+				case 2031:
+                    res = 'Формат матча: ' + event.i1 + 'x' + event.i2;
+                    break;
+
+                case 1536:
+                    if (event.i5 == 0) {
+                        res = "Команда " + event.i1 + ": +" + event.i2 + " очков";
+                    } else {
+                        res = "Корректировка счета, команда" + event.i1 + ":" + ((i5 == 1) ? " +" : " -") + event.i2;
+                    }
+                    break;
+                default:
+                    res = event.type;
+					
+					
+					
+					
+            }
+
+            return res;
+        }
         
-        function openInNewTab(url) {
-          var win = window.open(url, '_blank');
-          win.focus();
+        var show_effect = false;
+
+        function event_insert_event(item) {
+            //console.log(item);
+
+            if (item.type == 1020) {
+                $("tr[id='" + item.i2 + "']").remove();
+                return;
+            }
+
+            var time = item.regtime.split(' ')[1];
+
+            var time_match = parse_event_time(item);
+
+            var desc = parse_event_desc(item);
+
+            var markdown = '<tr id="' + item.id + '"><td>' + time + '</td><td>' + time_match +
+
+                '</td><td>' + desc +
+                '</td></tr>';
+            
+            
+            $(markdown).prependTo('#event_rows > tbody');
+            
+            if(show_effect){
+                $("tr[id='" + item.id + "']").addClass('success');
+                //$("tr[id='" + item.id + "']").hide();
+  
+                /*$("tr[id='" + item.id + "']").fadeIn(2000, function() {
+                    $(this).removeClass('success');
+                });*/
+                
+                setTimeout(function(){
+                    $("tr[id='" + item.id + "']").removeClass('success');
+                }, 2000);
+            }
+
+
+            if (item.id >= last_event_id)
+                last_event_id = item.id;
+            //$("#event_rows > tbody").prepend(markdown);
+
+
+        }
+
+        var stop = false;
+
+        function stop_showing() {
+            $('#start_stop_btn').removeClass('btn-danger');
+            $('#start_stop_btn').addClass('btn-success');
+            $('#start_stop_btn').text('Старт');
+            stop = true;
+            show_effect = false;
+            event_code = null;
+        }
+
+        function load_events() {
+
+            if (!event_code) {
+                clearTimeout(eventTimerId);
+                return;
+            }
+            $.ajax({
+                    method: "GET",
+                    url: API_ROOT + "events",
+                    data: {
+                        code: event_code,
+                        lastid: last_event_id
+                    }
+                })
+                .done(function(data) {
+                    if (typeof(data.error) !== 'undefined') {
+                        stop_showing();
+                        alert(data.error);
+                        return;
+                    }
+                    var events = data.events;
+
+
+
+                    events.reverse();
+                    $.each(events, function(index, value) {
+                        event_insert_event(value);
+                        if (value.type == 1103 || value.type == 1002) {
+                            stop_showing();
+                        }
+
+                    });
+                    if (!stop) {
+                        show_effect = true;
+                        eventTimerId = setTimeout(load_events, 1000);
+                    }
+                });
         }
 
         function event_show_event(id) {
 
+            last_event_id = 0;
 
+            stop = false;
+
+            updateQueryStringParam('id', id);
+            event_code = getQueryStringParam('id');
+
+            $('#event_id').val(id);
 
             if (!id) return;
-            openInNewTab('event.html?id='+id);
+
+            $('#start_stop_btn').removeClass('btn-success');
+            $('#start_stop_btn').addClass('btn-danger');
+            $('#start_stop_btn').text('Стоп');
 
 
+            $("#event_rows > tbody").empty();
 
-        }
-
-        function main_insert_item(item) {
-            var date = item.start.substr(0, item.start.length - 3);
-
-            var sport = sport_codes[item.sport_code];
-            if (sport === undefined)
-                sport = item.sport_code;
-
-            $("#main_rows > tbody").append('<tr><td class="col-md-1"><a href="javascript:event_show_event(' + item.code + ')">' + item.code + '</a></td><td class="col-md-1" nowrap>' + date +
-                '</td><td class="col-md-2" nowrap>' + sport +
-                '</td><td class="col-md-2" nowrap>' + item.tournament +
-                '</td><td class="col-md-2" nowrap>' + item.hometeam +
-                '</td><td class="col-md-2" nowrap>' + item.awayteam +
-                '</td><td class="col-md-1" nowrap>' + item.gateway_code +
-                '</td></tr>'
-            );
-            //console.log(item.caption);
-        }
-
-        function main_refresh() {
-
-            $("#main_rows > tbody").empty();
-            $.get(API_ROOT + "actrans", function(data) {
-
-
-                $.each(data.items, function(index, value) {
-                    main_insert_item(value);
-                });
-
-                $("#main_rows").tablesorter({
-                    sortList: [
-                        [2, 0],
-                        [3, 0],
-                        [1, 0],
-                        [4, 0]
-                    ]
-                });
-
-
-            });
+            load_events();
 
         }
+
+
+
         $(document).ready(function() {
             console.log("ready!");
-            $('#main_refresh').click(function() {
-                main_refresh();
-            });
 
-            main_refresh();
+            if (!!event_code) {
+                event_show_event(event_code);
+            }
+
+            $('#start_stop_btn').click(function() {
+                if ($('#start_stop_btn').hasClass('btn-danger')) {
+                    stop_showing();
+                } else {
+                    event_show_event($('#event_id').val());
+                }
+
+            });
 
 
         });
